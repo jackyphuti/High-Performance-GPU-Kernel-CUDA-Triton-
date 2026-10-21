@@ -4,7 +4,9 @@ PyTorch Eager vs Custom CUDA FlashAttention vs OpenAI Triton FlashAttention
 """
 
 import math
+
 import torch
+
 from triton.flash_attention import flash_attention_triton
 
 try:
@@ -18,7 +20,9 @@ def pytorch_eager_attention(q, k, v, is_causal=True):
     scores = torch.matmul(q, k.transpose(-1, -2)) * scale
     if is_causal:
         seq_len = q.shape[-2]
-        mask = torch.triu(torch.full((seq_len, seq_len), float('-inf'), device=q.device), diagonal=1)
+        mask = torch.triu(
+            torch.full((seq_len, seq_len), float("-inf"), device=q.device), diagonal=1
+        )
         scores = scores + mask
     p = torch.softmax(scores, dim=-1)
     return torch.matmul(p, v)
@@ -64,32 +68,48 @@ def run_attention_benchmarks():
         v = torch.randn((B, H, N, D), device="cuda", dtype=torch.float16)
 
         # Causal attention FLOPs: 4 * B * H * (N^2 / 2) * D = 2 * B * H * N^2 * D
-        flops = 2.0 * B * H * (N ** 2) * D
+        flops = 2.0 * B * H * (N**2) * D
 
         # 1. PyTorch Eager Attention
         eager_ms, eager_mem = None, None
         try:
             eager_ms, eager_mem = benchmark_attn(pytorch_eager_attention, q, k, v)
             eager_tflops = (flops * 1e-12) / (eager_ms * 1e-3)
-            print(f"{N:<12} | {'PyTorch Eager (O(N^2))':<26} | {eager_ms:<10.3f} | {eager_tflops:<10.2f} | {eager_mem:<14.1f} | {'1.00x':<8}")
+            print(
+                f"{N:<12} | {'PyTorch Eager (O(N^2))':<26} | {eager_ms:<10.3f} | {eager_tflops:<10.2f} | {eager_mem:<14.1f} | {'1.00x':<8}"
+            )
         except torch.cuda.OutOfMemoryError:
-            print(f"{N:<12} | {'PyTorch Eager (O(N^2))':<26} | {'OOM':<10} | {'-':<10} | {'> 16000 MB':<14} | {'-':<8}")
+            print(
+                f"{N:<12} | {'PyTorch Eager (O(N^2))':<26} | {'OOM':<10} | {'-':<10} | {'> 16000 MB':<14} | {'-':<8}"
+            )
 
         # 2. Triton FlashAttention-2
         triton_ms, triton_mem = benchmark_attn(flash_attention_triton, q, k, v, True)
         triton_tflops = (flops * 1e-12) / (triton_ms * 1e-3)
-        speedup_str = f"{(eager_ms / triton_ms):.2f}x" if eager_ms is not None else "N/A (OOM saved)"
-        print(f"{'':<12} | {'Triton FlashAttention-2':<26} | {triton_ms:<10.3f} | {triton_tflops:<10.2f} | {triton_mem:<14.1f} | {speedup_str:<8}")
+        speedup_str = (
+            f"{(eager_ms / triton_ms):.2f}x"
+            if eager_ms is not None
+            else "N/A (OOM saved)"
+        )
+        print(
+            f"{'':<12} | {'Triton FlashAttention-2':<26} | {triton_ms:<10.3f} | {triton_tflops:<10.2f} | {triton_mem:<14.1f} | {speedup_str:<8}"
+        )
 
         # 3. Custom CUDA FlashAttention (if available and N <= 4096)
         if ck is not None and ck.ops.HAS_CUDA_EXT:
             q_f32 = q.float()
             k_f32 = k.float()
             v_f32 = v.float()
-            cuda_ms, cuda_mem = benchmark_attn(ck.flash_attention, q_f32, k_f32, v_f32, True)
+            cuda_ms, cuda_mem = benchmark_attn(
+                ck.flash_attention, q_f32, k_f32, v_f32, True
+            )
             cuda_tflops = (flops * 1e-12) / (cuda_ms * 1e-3)
-            cuda_speedup = f"{(eager_ms / cuda_ms):.2f}x" if eager_ms is not None else "N/A"
-            print(f"{'':<12} | {'CUDA Custom FlashAttention':<26} | {cuda_ms:<10.3f} | {cuda_tflops:<10.2f} | {cuda_mem:<14.1f} | {cuda_speedup:<8}")
+            cuda_speedup = (
+                f"{(eager_ms / cuda_ms):.2f}x" if eager_ms is not None else "N/A"
+            )
+            print(
+                f"{'':<12} | {'CUDA Custom FlashAttention':<26} | {cuda_ms:<10.3f} | {cuda_tflops:<10.2f} | {cuda_mem:<14.1f} | {cuda_speedup:<8}"
+            )
 
         print("-" * 105)
 

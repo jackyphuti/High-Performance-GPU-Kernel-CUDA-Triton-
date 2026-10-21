@@ -4,7 +4,6 @@ Calculates Arithmetic Intensity (FLOP/byte) vs Achieved Performance (TFLOPS)
 and plots the empirical and theoretical roofline curves.
 """
 
-import math
 import numpy as np
 
 # Theoretical hardware profiles
@@ -23,7 +22,7 @@ GPU_SPECS = {
         "mem_bw_gbs": 3350.0,
         "fp32_tflops": 67.0,
         "tensor_tflops": 989.0,
-    }
+    },
 }
 
 
@@ -55,7 +54,9 @@ def print_roofline_analysis(gpu_name="Tesla T4"):
         ("Turing Tensor Core (wmma 16x16)", 64.0, 52.0, "Tensor Core Bound (80% Peak)"),
     ]
 
-    print(f"{'Kernel Name':<36} | {'Intensity (FLOP/B)':<20} | {'TFLOPS':<8} | {'Regime':<20}")
+    print(
+        f"{'Kernel Name':<36} | {'Intensity (FLOP/B)':<20} | {'TFLOPS':<8} | {'Regime':<20}"
+    )
     print("-" * 80)
     for name, intensity, tflops, regime in kernels:
         print(f"{name:<36} | {intensity:<20.2f} | {tflops:<8.2f} | {regime:<20}")
@@ -63,6 +64,7 @@ def print_roofline_analysis(gpu_name="Tesla T4"):
 
     try:
         import matplotlib.pyplot as plt
+
         intensities = np.logspace(-1, 3, 500)
         # FP32 roof
         roof_fp32 = np.minimum(peak_fp32, intensities * bw / 1000.0)
@@ -70,27 +72,48 @@ def print_roofline_analysis(gpu_name="Tesla T4"):
         roof_tensor = np.minimum(peak_tensor, intensities * bw / 1000.0)
 
         plt.figure(figsize=(10, 6))
-        plt.loglog(intensities, roof_fp32, 'b-', label=f'FP32 Peak Roof ({peak_fp32} TFLOPS)')
-        plt.loglog(intensities, roof_tensor, 'r--', label=f'Tensor Core Peak Roof ({peak_tensor} TFLOPS)')
+        plt.loglog(
+            intensities, roof_fp32, "b-", label=f"FP32 Peak Roof ({peak_fp32} TFLOPS)"
+        )
+        plt.loglog(
+            intensities,
+            roof_tensor,
+            "r--",
+            label=f"Tensor Core Peak Roof ({peak_tensor} TFLOPS)",
+        )
 
         # Plot kernels
         for name, intensity, tflops, _ in kernels:
             plt.scatter(intensity, tflops, s=80, zorder=5)
             plt.annotate(name, (intensity * 1.1, tflops * 0.9), fontsize=9)
 
-        plt.axvline(fp32_knee, color='b', linestyle=':', alpha=0.6, label=f'FP32 Knee ({fp32_knee:.1f} FLOP/B)')
-        plt.axvline(tensor_knee, color='r', linestyle=':', alpha=0.6, label=f'Tensor Knee ({tensor_knee:.1f} FLOP/B)')
+        plt.axvline(
+            fp32_knee,
+            color="b",
+            linestyle=":",
+            alpha=0.6,
+            label=f"FP32 Knee ({fp32_knee:.1f} FLOP/B)",
+        )
+        plt.axvline(
+            tensor_knee,
+            color="r",
+            linestyle=":",
+            alpha=0.6,
+            label=f"Tensor Knee ({tensor_knee:.1f} FLOP/B)",
+        )
 
-        plt.title(f'Empirical Roofline Model: {gpu_name}')
-        plt.xlabel('Operational Intensity (FLOP/Byte)')
-        plt.ylabel('Attainable Performance (TFLOPS)')
+        plt.title(f"Empirical Roofline Model: {gpu_name}")
+        plt.xlabel("Operational Intensity (FLOP/Byte)")
+        plt.ylabel("Attainable Performance (TFLOPS)")
         plt.grid(True, which="both", ls="-", alpha=0.3)
-        plt.legend(loc='lower right')
+        plt.legend(loc="lower right")
         plt.tight_layout()
-        plt.savefig('roofline_analysis.png', dpi=300)
+        plt.savefig("roofline_analysis.png", dpi=300)
         print("\nPlot saved successfully to 'roofline_analysis.png'")
     except ImportError:
-        print("\nNote: matplotlib not found; skipping image export. Table output printed above.")
+        print(
+            "\nNote: matplotlib not found; skipping image export. Table output printed above."
+        )
 
 
 if __name__ == "__main__":

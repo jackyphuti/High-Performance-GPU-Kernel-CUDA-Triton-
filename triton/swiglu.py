@@ -4,16 +4,21 @@ Computes: SwiGLU(x, y) = (x * sigmoid(x)) * y
 """
 
 import torch
+
 import triton
 import triton.language as tl
 
 
 @triton.jit
 def _swiglu_kernel(
-    In, Out,
-    stride_in_m, stride_in_n,
-    stride_out_m, stride_out_n,
-    M, D,
+    In,
+    Out,
+    stride_in_m,
+    stride_in_n,
+    stride_out_m,
+    stride_out_n,
+    M,
+    D,
     BLOCK_SIZE: tl.constexpr,
 ):
     row_idx = tl.program_id(0)
@@ -59,10 +64,14 @@ def swiglu_triton(x: torch.Tensor) -> torch.Tensor:
     grid = (M, triton.cdiv(D, BLOCK_SIZE))
 
     _swiglu_kernel[grid](
-        x_2d, out_2d,
-        x_2d.stride(0), x_2d.stride(1),
-        out_2d.stride(0), out_2d.stride(1),
-        M, D,
+        x_2d,
+        out_2d,
+        x_2d.stride(0),
+        x_2d.stride(1),
+        out_2d.stride(0),
+        out_2d.stride(1),
+        M,
+        D,
         BLOCK_SIZE=BLOCK_SIZE,
     )
 

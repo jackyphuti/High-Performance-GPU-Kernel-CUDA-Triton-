@@ -1,9 +1,9 @@
 import torch
-from typing import Optional
 
 # Try importing the compiled C++/CUDA extension
 try:
     import custom_kernels_cuda as _C
+
     HAS_CUDA_EXT = True
 except ImportError:
     _C = None
@@ -11,12 +11,12 @@ except ImportError:
 
 # Try importing Triton kernels
 try:
-    import triton
-    from triton.gemm import matmul_triton
     from triton.flash_attention import flash_attention_triton
+    from triton.gemm import matmul_triton
     from triton.rms_norm import rms_norm_triton
-    from triton.swiglu import swiglu_triton
     from triton.rope import apply_rotary_emb_triton
+    from triton.swiglu import swiglu_triton
+
     HAS_TRITON = True
 except ImportError:
     HAS_TRITON = False
@@ -54,8 +54,11 @@ def gemm(a: torch.Tensor, b: torch.Tensor, backend: str = "auto") -> torch.Tenso
 
 
 def flash_attention(
-    q: torch.Tensor, k: torch.Tensor, v: torch.Tensor,
-    is_causal: bool = True, backend: str = "auto"
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    is_causal: bool = True,
+    backend: str = "auto",
 ) -> torch.Tensor:
     """
     Unified FlashAttention-2 dispatcher.
@@ -70,7 +73,10 @@ def flash_attention(
             scores = torch.matmul(q, k.transpose(-1, -2)) * scale
             if is_causal:
                 seq_len = q.shape[-2]
-                mask = torch.triu(torch.full((seq_len, seq_len), float('-inf'), device=q.device), diagonal=1)
+                mask = torch.triu(
+                    torch.full((seq_len, seq_len), float("-inf"), device=q.device),
+                    diagonal=1,
+                )
                 scores = scores + mask
             p = torch.softmax(scores, dim=-1)
             return torch.matmul(p, v)
@@ -85,7 +91,9 @@ def flash_attention(
         raise ValueError(f"Unknown backend: {backend}")
 
 
-def rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-6, backend: str = "auto") -> torch.Tensor:
+def rms_norm(
+    x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-6, backend: str = "auto"
+) -> torch.Tensor:
     """
     Unified RMSNorm dispatcher.
     """

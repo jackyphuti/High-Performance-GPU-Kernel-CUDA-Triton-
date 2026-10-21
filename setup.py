@@ -1,6 +1,7 @@
 import os
-from setuptools import setup, find_packages
+
 import torch
+from setuptools import find_packages, setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 # Detect GPU architectures
@@ -33,12 +34,15 @@ if torch.cuda.is_available() or os.environ.get("FORCE_CUDA", "0") == "1":
         )
     )
 
+with open("README.md", encoding="utf-8") as f:
+    long_description = f.read()
+
 setup(
     name="custom_kernels",
     version="0.2.0",
     author="GPU Performance Engineering Community",
     description="High-Performance GPU Kernels in CUDA C++ and OpenAI Triton",
-    long_description=open("README.md").read(),
+    long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(where="python") + ["triton"],
     package_dir={"": "python", "triton": "triton"},

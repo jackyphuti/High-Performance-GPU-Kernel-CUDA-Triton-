@@ -2,12 +2,12 @@
 Unit Tests for Normalization, Activation, and RoPE Kernels
 """
 
-import math
 import pytest
 import torch
+
 from triton.rms_norm import rms_norm_triton
-from triton.swiglu import swiglu_triton
 from triton.rope import apply_rotary_emb_triton
+from triton.swiglu import swiglu_triton
 
 try:
     import custom_kernels as ck

@@ -4,15 +4,20 @@ Computes: y = (x / sqrt(mean(x^2) + eps)) * w
 """
 
 import torch
+
 import triton
 import triton.language as tl
 
 
 @triton.jit
 def _rms_norm_fwd_kernel(
-    X, W, Y,
-    stride_x_row, stride_y_row,
-    N, eps,
+    X,
+    W,
+    Y,
+    stride_x_row,
+    stride_y_row,
+    N,
+    eps,
     BLOCK_SIZE: tl.constexpr,
 ):
     row_idx = tl.program_id(0)
@@ -38,7 +43,9 @@ def _rms_norm_fwd_kernel(
     tl.store(row_y + offs, y.to(Y.dtype.element_ty), mask=mask)
 
 
-def rms_norm_triton(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+def rms_norm_triton(
+    x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-6
+) -> torch.Tensor:
     """
     Triton Fused RMSNorm wrapper.
     Args:
@@ -61,9 +68,13 @@ def rms_norm_triton(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-6) ->
     grid = (M,)
 
     _rms_norm_fwd_kernel[grid](
-        x_2d, weight, y_2d,
-        x_2d.stride(0), y_2d.stride(0),
-        N, eps,
+        x_2d,
+        weight,
+        y_2d,
+        x_2d.stride(0),
+        y_2d.stride(0),
+        N,
+        eps,
         BLOCK_SIZE=BLOCK_SIZE,
         num_warps=4 if BLOCK_SIZE <= 2048 else 8,
     )

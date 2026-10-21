@@ -4,20 +4,40 @@ Implements the Online Softmax algorithm to prevent materializing O(N^2) attentio
 """
 
 import math
+
 import torch
+
 import triton
 import triton.language as tl
 
 
 @triton.jit
 def _fwd_kernel(
-    Q, K, V, sm_scale,
-    L, Out,
-    stride_qz, stride_qh, stride_qm, stride_qk,
-    stride_kz, stride_kh, stride_kn, stride_kk,
-    stride_vz, stride_vh, stride_vn, stride_vk,
-    stride_oz, stride_oh, stride_om, stride_ok,
-    Z, H, N_CTX,
+    Q,
+    K,
+    V,
+    sm_scale,
+    L,
+    Out,
+    stride_qz,
+    stride_qh,
+    stride_qm,
+    stride_qk,
+    stride_kz,
+    stride_kh,
+    stride_kn,
+    stride_kk,
+    stride_vz,
+    stride_vh,
+    stride_vn,
+    stride_vk,
+    stride_oz,
+    stride_oh,
+    stride_om,
+    stride_ok,
+    Z,
+    H,
+    N_CTX,
     BLOCK_M: tl.constexpr,
     BLOCK_DMODEL: tl.constexpr,
     BLOCK_N: tl.constexpr,
@@ -31,9 +51,15 @@ def _fwd_kernel(
     offs_n = tl.arange(0, BLOCK_N)
     offs_d = tl.arange(0, BLOCK_DMODEL)
 
-    off_q = off_hz * stride_qh + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
-    off_k = off_hz * stride_kh + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
-    off_v = off_hz * stride_vh + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
+    off_q = (
+        off_hz * stride_qh + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
+    )
+    off_k = (
+        off_hz * stride_kh + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
+    )
+    off_v = (
+        off_hz * stride_vh + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
+    )
 
     # Pointers to Q, K, V
     q = tl.load(Q + off_q, mask=offs_m[:, None] < N_CTX, other=0.0)
@@ -52,8 +78,16 @@ def _fwd_kernel(
         curr_offs_n = start_n + offs_n
 
         # Load K and V tiles
-        k = tl.load(K + off_k + start_n * stride_kn, mask=curr_offs_n[None, :] < N_CTX, other=0.0)
-        v = tl.load(V + off_v + start_n * stride_vn, mask=curr_offs_n[:, None] < N_CTX, other=0.0)
+        k = tl.load(
+            K + off_k + start_n * stride_kn,
+            mask=curr_offs_n[None, :] < N_CTX,
+            other=0.0,
+        )
+        v = tl.load(
+            V + off_v + start_n * stride_vn,
+            mask=curr_offs_n[:, None] < N_CTX,
+            other=0.0,
+        )
 
         # Compute QK^T
         qk = tl.zeros([BLOCK_M, BLOCK_N], dtype=tl.float32)
@@ -82,11 +116,15 @@ def _fwd_kernel(
     acc = acc / l_i[:, None]
 
     # Write output back to HBM
-    off_o = off_hz * stride_oh + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
+    off_o = (
+        off_hz * stride_oh + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
+    )
     tl.store(Out + off_o, acc.to(Out.dtype.element_ty), mask=offs_m[:, None] < N_CTX)
 
 
-def flash_attention_triton(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, is_causal: bool = True) -> torch.Tensor:
+def flash_attention_triton(
+    q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, is_causal: bool = True
+) -> torch.Tensor:
     """
     Triton FlashAttention-2 forward wrapper.
     Args:
@@ -112,13 +150,31 @@ def flash_attention_triton(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, is
     grid = (triton.cdiv(N_CTX, BLOCK_M), Z * H)
 
     _fwd_kernel[grid](
-        q, k, v, sm_scale,
-        L, out,
-        q.stride(0), q.stride(1), q.stride(2), q.stride(3),
-        k.stride(0), k.stride(1), k.stride(2), k.stride(3),
-        v.stride(0), v.stride(1), v.stride(2), v.stride(3),
-        out.stride(0), out.stride(1), out.stride(2), out.stride(3),
-        Z, H, N_CTX,
+        q,
+        k,
+        v,
+        sm_scale,
+        L,
+        out,
+        q.stride(0),
+        q.stride(1),
+        q.stride(2),
+        q.stride(3),
+        k.stride(0),
+        k.stride(1),
+        k.stride(2),
+        k.stride(3),
+        v.stride(0),
+        v.stride(1),
+        v.stride(2),
+        v.stride(3),
+        out.stride(0),
+        out.stride(1),
+        out.stride(2),
+        out.stride(3),
+        Z,
+        H,
+        N_CTX,
         BLOCK_M=BLOCK_M,
         BLOCK_DMODEL=D,
         BLOCK_N=BLOCK_N,
