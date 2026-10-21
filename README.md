@@ -14,6 +14,7 @@
 [**Kernel Matrix**](#kernel-matrix) •
 [**Benchmark Results**](#benchmark-results) •
 [**Quickstart**](#quickstart) •
+[**Colab Guide**](docs/COLAB_GUIDE.md) •
 [**Architecture Deep Dive**](#architecture-deep-dive) •
 [**Profiling**](#profiling-with-nsight-compute) •
 [**Contributing**](#contributing)
@@ -147,7 +148,7 @@ Out = ck.swiglu(In)  # [batch, seq, dim]
 To run benchmarks on a free Google Colab Tesla T4 GPU instance:
 
 1. Open a new notebook in [Google Colab](https://colab.research.google.com).
-2. Navigate to **Runtime $\to$ Change runtime type $\to$ T4 GPU**.
+2. Navigate to **Runtime -> Change runtime type -> T4 GPU**.
 3. Open [`notebooks/t4_sgemm_walkthrough.ipynb`](notebooks/t4_sgemm_walkthrough.ipynb) or execute:
 
 ```bash
@@ -155,6 +156,8 @@ To run benchmarks on a free Google Colab Tesla T4 GPU instance:
 %cd High-Performance-GPU-Kernel-CUDA-Triton-
 !nvcc -arch=sm_75 -O3 sgemm_t4.cu -o sgemm_t4 && ./sgemm_t4
 ```
+
+For detailed instructions, troubleshooting, and PyTorch extension benchmarking, see the [Google Colab Execution Guide](docs/COLAB_GUIDE.md).
 
 ---
 
