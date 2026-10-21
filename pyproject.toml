@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "torch>=2.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "custom_kernels"
+version = "0.2.0"
+description = "Production-grade custom GPU kernels in CUDA C++ and OpenAI Triton for LLMs and Deep Learning"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "GPU Kernel Engineering Community" }
+]
+keywords = [
+    "cuda",
+    "triton",
+    "gpu-kernels",
+    "flashattention",
+    "gemm",
+    "deep-learning",
+    "llm-inference",
+    "high-performance-computing",
+]
+
+[project.urls]
+Homepage = "https://github.com/jacky/High-Performance-GPU-Kernel-CUDA-Triton-"
+Repository = "https://github.com/jacky/High-Performance-GPU-Kernel-CUDA-Triton-"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"

@@ -1,0 +1,7 @@
+torch>=2.0.0
+triton>=2.1.0
+numpy>=1.20.0
+pytest>=7.0.0
+matplotlib>=3.5.0
+ruff>=0.1.0
+black>=23.0.0

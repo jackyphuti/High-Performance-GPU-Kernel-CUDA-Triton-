@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# CMake & Compiled Binaries
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.exe
+*.out
+*.o
+*.obj
+sgemm_t4
+sgemm_benchmark
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Testing & Linting
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Profiling reports
+*.ncu-rep
+*.nsys-rep
+roofline_analysis.png
+
+# Environment
+.env
+.venv
+env/
+venv/
